@@ -62,7 +62,7 @@ export default function Dashboard() {
 
     // Placeholder links for NavBar Services dropdown
     const navLinks = [
-        { name: "Daily Menu", path: "/page-1" },
+        { name: "Daily Menu", path: "/menu" },
         { name: "Extra Meals", path: "/page-2" },
         { name: "Leaves & Rebates", path: "/page-3" },
     ];
@@ -73,7 +73,7 @@ export default function Dashboard() {
             title: "Daily Menu",
             desc: "View daily menus and timings.",
             icon: CalendarCheck,
-            link: "/page-1",
+            link: "/menu",
             color: "from-blue-500 to-indigo-500",
             bgLight: "bg-blue-50"
         },
