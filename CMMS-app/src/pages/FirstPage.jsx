@@ -102,6 +102,14 @@ export default function Dashboard() {
             color: "from-cyan-500 to-blue-500",
             bgLight: "bg-cyan-50"
         },
+        {
+            title: "Billing",
+            desc: "Check your mess dues and billing.",
+            icon: Wallet,
+            link: "/billing",
+            color: "from-emerald-500 to-teal-500",
+            bgLight: "bg-emerald-50"
+        },
     ];
 
     const containerVariants = {

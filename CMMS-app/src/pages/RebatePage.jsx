@@ -21,19 +21,22 @@ const RebatePage = () => {
 
     // Rebate Data
     const [rebates, setRebates] = useState([]);
+    const [bills, setBills] = useState([]);
 
     useEffect(() => {
         // Fetch real API data for NavBar (Consistent with ExtrasPage)
         const fetchDashboardData = async () => {
             try {
-                const [profileRes, notifRes, rebatesRes] = await Promise.all([
+                const [profileRes, notifRes, rebatesRes, billsRes] = await Promise.all([
                     api.get('/api/profile/'),
                     api.get('/api/notifications/'),
-                    api.get('/api/rebates/')
+                    api.get('/api/rebates/'),
+                    api.get('/api/mess-bill/').catch(() => ({ data: [] }))
                 ]);
                 setProfile(profileRes.data);
                 setNotifications(notifRes.data?.results || notifRes.data || []);
                 setRebates(rebatesRes.data || []);
+                setBills(Array.isArray(billsRes.data) ? billsRes.data : []);
             } catch (err) {
                 console.error("Error fetching dashboard data:", err);
                 // Fallback for visual testing
@@ -237,7 +240,15 @@ const RebatePage = () => {
                                         const eDate = new Date(item.end_date);
                                         const diffTime = eDate - sDate;
                                         const durationDays = diffTime >= 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 : 0;
-                                        const amount = durationDays * 150;
+                                        
+                                        // Calculate amount using daily_refund_rate based on the rebate month
+                                        const monthName = sDate.toLocaleString('default', { month: 'long' });
+                                        // If backend returns bill details without specific ?month=, try finding it:
+                                        const matchingBill = bills.find(b => b.month === monthName);
+                                        // Default to 150 if rate is missing (e.g. month bill not generated or no extra meals booked so not returned)
+                                        const dailyRate = matchingBill?.daily_refund_rate || 150; 
+                                        const amount = durationDays * dailyRate;
+                                        
                                         const displayId = `RBT-${item.id}`;
                                         const displayStatus = item.status || 'Processing';
                                         

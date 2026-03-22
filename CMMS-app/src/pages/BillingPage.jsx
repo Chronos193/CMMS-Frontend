@@ -100,30 +100,28 @@ const BillingPage = () => {
   // Ensure the grand total doesn't go below 0 if rebate refund is very large
   const grandTotal = Math.max(0, currentBill.total_bill || 0);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     setIsDownloading(true);
-    
-    // Quick approach using html2pdf via CDN
-    const element = document.getElementById('billing-content');
-    if (!element) return;
-    
-    const opt = {
-      margin:       0.5,
-      filename:     `MessBill_${billMonth.replace(' ', '_')}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
+    try {
+      const response = await api.get(`/api/mess-bill/pdf/?month=${encodeURIComponent(selectedMonth)}`, {
+        responseType: 'blob',
+      });
 
-    if (typeof window.html2pdf === 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-      script.onload = () => {
-        window.html2pdf().set(opt).from(element).save().then(() => setIsDownloading(false));
-      };
-      document.body.appendChild(script);
-    } else {
-      window.html2pdf().set(opt).from(element).save().then(() => setIsDownloading(false));
+      // Create a download link from the blob
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `MessBill_${selectedMonth}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download bill PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
