@@ -92,7 +92,7 @@ api.interceptors.response.use(
                 }
                 catch (_) { /* ignore */ }
 
-                window.location.href = "/login";
+                window.location.href = "/home";
                 return Promise.reject(refreshError);
             }
             finally {

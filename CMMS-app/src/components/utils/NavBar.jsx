@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, User, Utensils, LogOut, X, ChevronDown, Phone, Hash, Home, Building, Menu, SquarePen, CalendarClock, Sparkles, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import api from '../../Api';
+import { 
+    Bell, User, Utensils, LogOut, X, ChevronDown, Phone, Hash, 
+    Home, Building, Menu, SquarePen, CalendarClock, Sparkles, 
+    Star, LayoutDashboard, UtensilsCrossed, PackagePlus, ClipboardCheck 
+} from 'lucide-react';
 
 export default function NavBar({ profile, notifications, onOpenNotifications }) {
+    const navigate = useNavigate();
     const [showProfile, setShowProfile] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -10,6 +17,16 @@ export default function NavBar({ profile, notifications, onOpenNotifications }) 
     const profileRef = useRef(null);
     const notifRef = useRef(null);
     const menuRef = useRef(null);
+
+    const handleLogout = async () => {
+        try {
+            await api.post('/api/logout/');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        } finally {
+            navigate('/home');
+        }
+    };
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -47,18 +64,37 @@ export default function NavBar({ profile, notifications, onOpenNotifications }) 
                                 exit={{ opacity: 0, x: -10 }}
                                 className="absolute left-0 top-full mt-4 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50 py-2"
                             >
-                                <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                                    <SquarePen className="w-5 h-5" /> Rebate
-                                </button>
-                                <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                                    <CalendarClock className="w-5 h-5" /> Mess menu
-                                </button>
-                                <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                                    <Sparkles className="w-5 h-5" /> Complaints
-                                </button>
-                                <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                                    <Star className="w-5 h-5" /> Feedback
-                                </button>
+                                {profile?.role === 'admin' ? (
+                                    <>
+                                        <button onClick={() => { navigate('/admin-dashboard'); setShowMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <LayoutDashboard className="w-5 h-5 text-indigo-600" /> Admin Dashboard
+                                        </button>
+                                        <button onClick={() => { navigate('/admin-menu'); setShowMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <UtensilsCrossed className="w-5 h-5 text-blue-600" /> Menu Management
+                                        </button>
+                                        <button onClick={() => { navigate('/admin-extras'); setShowMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <PackagePlus className="w-5 h-5 text-purple-600" /> Extras Management
+                                        </button>
+                                        <button onClick={() => { navigate('/admin-rebate'); setShowMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <ClipboardCheck className="w-5 h-5 text-emerald-600" /> Rebates
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => { navigate('/rebate'); setShowMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <SquarePen className="w-5 h-5 text-indigo-600" /> Rebate
+                                        </button>
+                                        <button onClick={() => { navigate('/menu'); setShowMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <CalendarClock className="w-5 h-5 text-blue-600" /> Mess menu
+                                        </button>
+                                        <button onClick={() => { navigate('/feedbacks'); setShowMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <Sparkles className="w-5 h-5 text-purple-600" /> Complaints
+                                        </button>
+                                        <button onClick={() => { navigate('/billing'); setShowMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <Star className="w-5 h-5 text-emerald-600" /> Billing
+                                        </button>
+                                    </>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -231,7 +267,10 @@ export default function NavBar({ profile, notifications, onOpenNotifications }) 
                                 </div>
 
                                 <div className="p-3 bg-slate-50 border-t border-slate-100">
-                                    <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors">
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
+                                    >
                                         <LogOut className="w-4 h-4" strokeWidth={2.5} /> Logout
                                     </button>
                                 </div>

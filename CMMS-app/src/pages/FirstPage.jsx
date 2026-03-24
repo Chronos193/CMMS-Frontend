@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import NavBar from '../components/utils/NavBar';
 import { CalendarCheck, Utensils, ReceiptText, Wallet, MessageSquarePlus, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../Api';
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [loadingProfile, setLoadingProfile] = useState(true);
@@ -15,7 +17,13 @@ export default function Dashboard() {
             try {
                 // Fetch profile
                 const profileRes = await api.get('/api/profile/');
-                setProfile(profileRes.data);
+                const profileData = profileRes.data;
+                setProfile(profileData);
+
+                // Redirect if admin
+                if (profileData.role === 'admin') {
+                    navigate('/admin-dashboard');
+                }
 
                 // Fetch notifications
                 const notifRes = await api.get('/api/notifications/');
@@ -24,7 +32,7 @@ export default function Dashboard() {
             } catch (err) {
                 console.error("Error fetching dashboard data:", err);
                 // Fallback for visual testing if api fails immediately.
-                setProfile({
+                const fallbackProfile = {
                     name: "Shubham",
                     email: "shubhamkp24@iitk.ac.in",
                     role: "student",
@@ -32,7 +40,13 @@ export default function Dashboard() {
                     roll_no: "241010",
                     hall_of_residence: "Hall 3",
                     room_no: "B-215"
-                });
+                };
+                setProfile(fallbackProfile);
+                
+                if (fallbackProfile.role === 'admin') {
+                    navigate('/admin-dashboard');
+                }
+
                 setNotifications([
                     { id: 1, title: "Meal Confirmed", content: "Friday dinner confirmed.", category: "unseen", time: new Date().toISOString() }
                 ]);
@@ -42,7 +56,7 @@ export default function Dashboard() {
         };
 
         fetchDashboardData();
-    }, []);
+    }, [navigate]);
 
     const handleOpenNotifications = async () => {
         const hasUnseen = notifications.some(n => n.category === 'unseen');
@@ -57,8 +71,8 @@ export default function Dashboard() {
 
     const navLinks = [
         { name: "Daily Menu", path: "/menu" },
-        { name: "Extra Meals", path: "/page-2" },
-        { name: "Leaves & Rebates", path: "/page-3" },
+        { name: "Extra Meals", path: "/extras" },
+        { name: "Leaves & Rebates", path: "/rebate" },
     ];
 
     const dashboardCards = [
@@ -74,7 +88,7 @@ export default function Dashboard() {
             title: "Extra Meals",
             desc: "Book extra items for upcoming meals.",
             icon: Utensils,
-            link: "/page-2",
+            link: "/extras",
             color: "from-purple-500 to-fuchsia-500",
             bgLight: "bg-purple-50"
         },
@@ -87,10 +101,10 @@ export default function Dashboard() {
             bgLight: "bg-rose-50"
         },
         {
-            title: "My Account",
-            desc: "Check your mess dues and billing.",
+            title: "My Account & Billing",
+            desc: "Check your mess dues and billing history.",
             icon: Wallet,
-            link: "/page-4",
+            link: "/billing",
             color: "from-emerald-500 to-teal-500",
             bgLight: "bg-emerald-50"
         },
@@ -101,14 +115,6 @@ export default function Dashboard() {
             link: "/feedbacks",
             color: "from-cyan-500 to-blue-500",
             bgLight: "bg-cyan-50"
-        },
-        {
-            title: "Billing",
-            desc: "Check your mess dues and billing.",
-            icon: Wallet,
-            link: "/billing",
-            color: "from-emerald-500 to-teal-500",
-            bgLight: "bg-emerald-50"
         },
     ];
 
@@ -171,7 +177,7 @@ export default function Dashboard() {
                         )}
                     </motion.div>
 
-                    {/* Fancier Action Cards Container */}
+                    {/* Action Cards Container */}
                     <motion.div
                         variants={containerVariants}
                         initial="hidden"
@@ -184,13 +190,10 @@ export default function Dashboard() {
                                 href={card.link}
                                 variants={itemVariants}
                                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                                // Modern fancy card styling
                                 className="bg-white/90 backdrop-blur-lg rounded-3xl p-8 border border-slate-100 shadow-lg hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 flex flex-col text-left group relative overflow-hidden"
                             >
-                                {/* Fancy glowing background layer */}
                                 <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300 pointer-events-none`} />
 
-                                {/* Fancier Icon Wrapper */}
                                 <div className={`w-14 h-14 ${card.bgLight} rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform duration-300 relative z-10`}>
                                     <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity duration-300`}></div>
                                     <card.icon className={`w-7 h-7 text-slate-700 group-hover:text-indigo-600 transition-colors duration-300 relative z-10`} strokeWidth={2} />
@@ -201,14 +204,12 @@ export default function Dashboard() {
                                     {card.desc}
                                 </p>
 
-                                {/* Visual affordance for clickable card - styled as an arrow button */}
                                 <div className="mt-auto flex items-center gap-2 group-hover:gap-3 transition-all duration-300 relative z-10">
                                     <div className="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors duration-300">
                                         <span className="text-indigo-600 font-bold leading-none transform group-hover:translate-x-0.5 transition-transform">&rarr;</span>
                                     </div>
                                 </div>
 
-                                {/* Border accent active strictly on hover bottom line */}
                                 <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${card.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
                             </motion.a>
                         ))}

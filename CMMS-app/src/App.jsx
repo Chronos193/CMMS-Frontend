@@ -13,6 +13,7 @@ import AdminExtrasManagement from './pages/AdminExtrasManagement';
 import AdminBillingPage from './pages/AdminBillingPage';
 import AdminMenuManagement from './pages/AdminMenuManagement';
 import AdminRebatePage from './pages/AdminRebatePage';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -83,11 +84,11 @@ function App() {
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<HomePage />} />
 
-        {/* Placeholder for future dashboard */}
-        <Route path="/dashboard" element={
-          <div className='flex justify-center items-center h-screen bg-gray-900 text-white'>
-            <h1 className='text-3xl font-bold'>Welcome to Dashboard!</h1>
-          </div>
+        {/* Admin Dashboard */}
+        <Route path="/admin-dashboard" element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
         } />
       </Routes>
     </Router>
