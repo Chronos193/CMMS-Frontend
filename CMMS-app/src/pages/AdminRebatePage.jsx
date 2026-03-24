@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import api from "../Api";
+import NavBar from "../components/utils/NavBar";
 
 // ── Inline SVG Icon Components ─────────────────────────────────────────────
 const Icon = ({ children, size = 20, style = {} }) => (
@@ -28,31 +30,14 @@ const Icons = {
   Inbox: (p) => <Icon {...p}><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></Icon>,
   Save: (p) => <Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>,
   CheckCircle2: (p) => <Icon {...p}><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/><path d="m9 12 2 2 4-4"/></Icon>,
+  Loader: (p) => <Icon {...p}><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></Icon>,
 };
-
-// ── Constants ─────────────────────────────────────────────────────────────
-const DAILY_RATE = 120;
-
-const INITIAL_DATA = [
-  { id:1,  name:"Shubham Kumar Pandey", roll:"220850", mess:"Hall 5 Mess", from:"2026-03-10", to:"2026-03-17", days:7,  reason:"Going home for Holi festival celebrations",              applied:"2026-03-05", status:"Pending",  note:"" },
-  { id:2,  name:"Ananya Sharma",        roll:"220123", mess:"Hall 2 Mess", from:"2026-03-14", to:"2026-03-20", days:6,  reason:"Medical leave — fever and viral infection",              applied:"2026-03-12", status:"Approved", note:"Medical certificate verified." },
-  { id:3,  name:"Rohan Verma",          roll:"210456", mess:"Hall 7 Mess", from:"2026-03-01", to:"2026-03-05", days:4,  reason:"College sports tournament away match",                   applied:"2026-02-28", status:"Approved", note:"Sports captain approval attached." },
-  { id:4,  name:"Priya Nair",           roll:"220789", mess:"Hall 4 Mess", from:"2026-03-18", to:"2026-03-25", days:7,  reason:"Family function — sister wedding",                       applied:"2026-03-15", status:"Pending",  note:"" },
-  { id:5,  name:"Aditya Singh",         roll:"210987", mess:"Hall 5 Mess", from:"2026-02-20", to:"2026-02-25", days:5,  reason:"Internship interview travel to Bangalore",               applied:"2026-02-18", status:"Rejected", note:"Insufficient advance notice period." },
-  { id:6,  name:"Kavya Menon",          roll:"220654", mess:"Hall 2 Mess", from:"2026-03-22", to:"2026-03-30", days:8,  reason:"Research conference presentation at IIT Bombay",        applied:"2026-03-20", status:"Pending",  note:"" },
-  { id:7,  name:"Rahul Gupta",          roll:"210321", mess:"Hall 7 Mess", from:"2026-02-10", to:"2026-02-15", days:5,  reason:"Home visit — parents unwell",                            applied:"2026-02-08", status:"Approved", note:"" },
-  { id:8,  name:"Sneha Patel",          roll:"220543", mess:"Hall 4 Mess", from:"2026-03-05", to:"2026-03-07", days:2,  reason:"Dental surgery appointment",                             applied:"2026-03-03", status:"Approved", note:"Doctor slip received." },
-  { id:9,  name:"Varun Joshi",          roll:"210765", mess:"Hall 5 Mess", from:"2026-03-25", to:"2026-04-01", days:7,  reason:"Summer internship preparation and travel",               applied:"2026-03-22", status:"Pending",  note:"" },
-  { id:10, name:"Manya Agarwal",        roll:"220198", mess:"Hall 2 Mess", from:"2026-01-15", to:"2026-01-20", days:5,  reason:"Aunt marriage function in Jaipur",                       applied:"2026-01-12", status:"Approved", note:"" },
-  { id:11, name:"Deepak Chauhan",       roll:"210876", mess:"Hall 7 Mess", from:"2026-02-28", to:"2026-03-03", days:3,  reason:"National level chess tournament",                        applied:"2026-02-25", status:"Rejected", note:"Application submitted too late." },
-  { id:12, name:"Neha Mishra",          roll:"220432", mess:"Hall 4 Mess", from:"2026-03-12", to:"2026-03-18", days:6,  reason:"International student exchange visit to NUS Singapore",  applied:"2026-03-10", status:"Pending",  note:"" },
-].map(d => ({ ...d, amount: d.days * DAILY_RATE }));
 
 // ── Status helpers ────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Pending:  { bg: "#fef3c7", color: "#f59e0b", Icon: Icons.Clock },
-  Approved: { bg: "#dcfce7", color: "#22c55e", Icon: Icons.CheckCircle },
-  Rejected: { bg: "#fee2e2", color: "#ef4444", Icon: Icons.XCircle },
+  pending:  { bg: "#fef3c7", color: "#f59e0b", Icon: Icons.Clock,       label: "Pending" },
+  approved: { bg: "#dcfce7", color: "#22c55e", Icon: Icons.CheckCircle, label: "Approved" },
+  rejected: { bg: "#fee2e2", color: "#ef4444", Icon: Icons.XCircle,     label: "Rejected" },
 };
 
 // ── Styles (CSS-in-JS objects) ────────────────────────────────────────────
@@ -110,26 +95,29 @@ const S = {
   mdesc:      { background:"#f7f7fd", border:"1.5px solid #e5e6f7", borderRadius:10, padding:14, fontSize:14, lineHeight:1.65, color:"#1a1b3a" },
   calcBox:    { background:"#ededfd", borderRadius:10, padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 },
   mnote:      { width:"100%", padding:"10px 14px", border:"1.5px solid #e5e6f7", borderRadius:10, fontFamily:"inherit", fontSize:14, color:"#1a1b3a", background:"#f7f7fd", outline:"none", resize:"vertical", minHeight:72 },
+
+  // loading
+  loadingWrap: { display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"60vh", gap:16 },
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────
 
 function StatusBadge({ status, size = 11 }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.Pending;
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   const Ic = cfg.Icon;
   return (
     <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:50, fontSize:12, fontWeight:700, background:cfg.bg, color:cfg.color }}>
-      <Ic size={size} /> {status}
+      <Ic size={size} /> {cfg.label}
     </span>
   );
 }
 
-function ActionBtn({ onClick, color, hoverBg, title, children }) {
+function ActionBtn({ onClick, color, hoverBg, title, children, disabled }) {
   const [hov, setHov] = useState(false);
   return (
-    <button title={title} onClick={onClick}
+    <button title={title} onClick={onClick} disabled={disabled}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ ...S.aibtn, color: hov ? "#fff" : color, background: hov ? hoverBg : "#fff", borderColor: hov ? hoverBg : "#e5e6f7" }}>
+      style={{ ...S.aibtn, color: hov ? "#fff" : color, background: hov ? hoverBg : "#fff", borderColor: hov ? hoverBg : "#e5e6f7", opacity: disabled ? 0.5 : 1, pointerEvents: disabled ? "none" : "auto" }}>
       {children}
     </button>
   );
@@ -152,15 +140,16 @@ function StatCard({ label, value, iconBg, iconColor, IconComp, onClick }) {
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────
-function RebateModal({ item, onClose, onAction }) {
-  const [note, setNote] = useState(item.note || "");
+function RebateModal({ item, onClose, onAction, isActioning }) {
+  const [note, setNote] = useState(item.admin_note || "");
 
   if (!item) return null;
 
-  const handleAction = (status) => {
-    onAction(item.id, status, note);
-    onClose();
+  const handleAction = (newStatus) => {
+    onAction(item.id, newStatus, note);
   };
+
+  const dailyRate = item.amount && item.days ? Math.round(item.amount / item.days) : 120;
 
   return (
     <div style={S.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -175,10 +164,10 @@ function RebateModal({ item, onClose, onAction }) {
 
         {/* Student info */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
-          {[["Student Name", item.name], ["Roll No.", item.roll], ["Mess", item.mess], ["Applied On", item.applied]].map(([label, val]) => (
+          {[["Student Name", item.user_name], ["Roll No.", item.user_roll_no], ["Mess / Hall", item.user_hall], ["Applied On", item.created_at ? new Date(item.created_at).toLocaleDateString() : ""]].map(([label, val]) => (
             <div key={label}>
               <div style={S.mlabel}>{label}</div>
-              <div style={S.mval}>{val}</div>
+              <div style={S.mval}>{val || "—"}</div>
             </div>
           ))}
         </div>
@@ -187,7 +176,7 @@ function RebateModal({ item, onClose, onAction }) {
 
         {/* Leave details */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
-          {[["From Date", item.from], ["To Date", item.to], ["Total Days", item.days + " days"], ["Daily Rate", "₹" + DAILY_RATE + " / day"]].map(([label, val]) => (
+          {[["From Date", item.start_date], ["To Date", item.end_date], ["Total Days", item.days + " days"], ["Daily Rate", "₹" + dailyRate + " / day"]].map(([label, val]) => (
             <div key={label}>
               <div style={S.mlabel}>{label}</div>
               <div style={S.mval}>{val}</div>
@@ -195,19 +184,19 @@ function RebateModal({ item, onClose, onAction }) {
           ))}
         </div>
 
-        {/* Reason */}
+        {/* Reason / Location */}
         <div style={{ marginBottom:16 }}>
-          <div style={S.mlabel}>Reason for Leave</div>
-          <div style={S.mdesc}>{item.reason}</div>
+          <div style={S.mlabel}>Reason / Location</div>
+          <div style={S.mdesc}>{item.location}</div>
         </div>
 
         {/* Rebate calc */}
         <div style={S.calcBox}>
           <div>
             <div style={{ fontSize:13, fontWeight:600, color:"#5b5ef4" }}>Calculated Rebate Amount</div>
-            <div style={{ fontSize:11, color:"#5b5ef4", opacity:.7, marginTop:1 }}>{item.days}d × ₹{DAILY_RATE}/day</div>
+            <div style={{ fontSize:11, color:"#5b5ef4", opacity:.7, marginTop:1 }}>{item.days}d × ₹{dailyRate}/day</div>
           </div>
-          <div style={{ fontSize:22, fontWeight:800, color:"#5b5ef4" }}>₹{item.amount.toLocaleString("en-IN")}</div>
+          <div style={{ fontSize:22, fontWeight:800, color:"#5b5ef4" }}>₹{(item.amount || 0).toLocaleString("en-IN")}</div>
         </div>
 
         {/* Admin note */}
@@ -218,10 +207,10 @@ function RebateModal({ item, onClose, onAction }) {
 
         {/* Actions */}
         <div style={{ display:"flex", gap:10 }}>
-          <ModalBtn color="#22c55e" onClick={() => handleAction("Approved")}>
+          <ModalBtn color="#22c55e" onClick={() => handleAction("approved")} disabled={isActioning}>
             <Icons.Check size={15} /> Approve
           </ModalBtn>
-          <ModalBtn color="#ef4444" onClick={() => handleAction("Rejected")}>
+          <ModalBtn color="#ef4444" onClick={() => handleAction("rejected")} disabled={isActioning}>
             <Icons.X size={15} /> Reject
           </ModalBtn>
         </div>
@@ -230,11 +219,11 @@ function RebateModal({ item, onClose, onAction }) {
   );
 }
 
-function ModalBtn({ color, onClick, children }) {
+function ModalBtn({ color, onClick, children, disabled }) {
   const [hov, setHov] = useState(false);
   return (
-    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ flex:1, padding:12, borderRadius:10, fontFamily:"inherit", fontSize:14, fontWeight:700, cursor:"pointer", border:"none", background:color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity: hov ? .88 : 1, transform: hov ? "translateY(-1px)" : "none", transition:"all .15s" }}>
+    <button onClick={onClick} disabled={disabled} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ flex:1, padding:12, borderRadius:10, fontFamily:"inherit", fontSize:14, fontWeight:700, cursor: disabled ? "not-allowed" : "pointer", border:"none", background:color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity: hov && !disabled ? .88 : disabled ? .5 : 1, transform: hov && !disabled ? "translateY(-1px)" : "none", transition:"all .15s" }}>
       {children}
     </button>
   );
@@ -258,30 +247,59 @@ function Toast({ msg, show }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function AdminRebatePage() {
-  const [data, setData] = useState(INITIAL_DATA);
+  // ── State ──
+  const [data, setData] = useState([]);
+  const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, total_approved_amount: 0, total: 0 });
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [activeId, setActiveId] = useState(null);
   const [toast, setToast] = useState({ show: false, msg: "" });
+  const [isActioning, setIsActioning] = useState(false);
   const PER = 8;
 
-  // Stats
-  const stats = useMemo(() => ({
-    pending:  data.filter(d => d.status === "Pending").length,
-    approved: data.filter(d => d.status === "Approved").length,
-    rejected: data.filter(d => d.status === "Rejected").length,
-    total:    data.filter(d => d.status === "Approved").reduce((s, d) => s + d.amount, 0),
-  }), [data]);
+  // ── Fetch rebates + stats from backend API ──
+  const fetchData = async () => {
+    try {
+      const [rebatesRes, statsRes, profileRes, notifRes] = await Promise.all([
+        api.get("/api/rebates/"),
+        api.get("/api/rebates/stats/"),
+        api.get("/api/profile/"),
+        api.get("/api/notifications/"),
+      ]);
+      setData(rebatesRes.data || []);
+      setStats(statsRes.data || { pending: 0, approved: 0, rejected: 0, total_approved_amount: 0, total: 0 });
+      setProfile(profileRes.data);
+      setNotifications(notifRes.data?.results || notifRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch rebate data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Filtered
+  const handleOpenNotifications = async () => {
+    const hasUnseen = notifications.some(n => n.category === 'unseen');
+    if (!hasUnseen) return;
+    setNotifications(prev => prev.map(n => ({ ...n, category: 'seen' })));
+    try { await api.post('/api/notifications/mark-seen/'); } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // ── Filtered list (search + status + month) ──
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return data.filter(d =>
-      (!q || d.name.toLowerCase().includes(q) || d.roll.includes(q) || d.reason.toLowerCase().includes(q)) &&
+      (!q || (d.user_name || "").toLowerCase().includes(q) || (d.user_roll_no || "").includes(q) || (d.location || "").toLowerCase().includes(q)) &&
       (!statusFilter || d.status === statusFilter) &&
-      (!monthFilter || d.from.startsWith(monthFilter) || d.to.startsWith(monthFilter))
+      (!monthFilter || (d.start_date || "").startsWith(monthFilter) || (d.end_date || "").startsWith(monthFilter))
     );
   }, [data, search, statusFilter, monthFilter]);
 
@@ -296,27 +314,84 @@ export default function AdminRebatePage() {
     setTimeout(() => setToast({ show: false, msg: "" }), 2800);
   };
 
-  const quickStatus = (id, status) => {
+  // ── Quick approve/reject via PATCH /api/rebates/<id>/ ──
+  const quickStatus = async (id, newStatus) => {
     const item = data.find(d => d.id === id);
-    setData(prev => prev.map(d => d.id === id ? { ...d, status } : d));
-    showToast((status === "Approved" ? "✓ Approved: " : "✗ Rejected: ") + item?.name);
+    setIsActioning(true);
+    try {
+      await api.patch(`/api/rebates/${id}/`, { status: newStatus });
+      // Optimistic update
+      setData(prev => prev.map(d => d.id === id ? { ...d, status: newStatus } : d));
+      showToast((newStatus === "approved" ? "✓ Approved: " : "✗ Rejected: ") + (item?.user_name || ""));
+      // Refresh stats
+      const statsRes = await api.get("/api/rebates/stats/");
+      setStats(statsRes.data);
+    } catch (err) {
+      console.error("Failed to update rebate status:", err);
+      showToast("⚠ Failed to update status");
+    } finally {
+      setIsActioning(false);
+    }
   };
 
-  const handleModalAction = (id, status, note) => {
+  // ── Modal approve/reject with note via PATCH /api/rebates/<id>/ ──
+  const handleModalAction = async (id, newStatus, note) => {
     const item = data.find(d => d.id === id);
-    setData(prev => prev.map(d => d.id === id ? { ...d, status, note } : d));
-    showToast((status === "Approved" ? "✓ Rebate approved — " : "✗ Application rejected — ") + item?.name);
-    setActiveId(null);
+    setIsActioning(true);
+    try {
+      const res = await api.patch(`/api/rebates/${id}/`, { status: newStatus, admin_note: note });
+      // Update with full response from backend
+      setData(prev => prev.map(d => d.id === id ? res.data : d));
+      showToast((newStatus === "approved" ? "✓ Rebate approved — " : "✗ Application rejected — ") + (item?.user_name || ""));
+      setActiveId(null);
+      // Refresh stats
+      const statsRes = await api.get("/api/rebates/stats/");
+      setStats(statsRes.data);
+    } catch (err) {
+      console.error("Failed to update rebate:", err);
+      showToast("⚠ Failed to update rebate");
+    } finally {
+      setIsActioning(false);
+    }
   };
 
   const filterByStatus = (s) => { setStatusFilter(s); setCurrentPage(1); };
+
+  // ── Auto-generate month filter options from actual data ──
+  const monthOptions = useMemo(() => {
+    const months = new Set();
+    data.forEach(d => {
+      if (d.start_date) months.add(d.start_date.substring(0, 7));
+      if (d.end_date) months.add(d.end_date.substring(0, 7));
+    });
+    return Array.from(months).sort().reverse();
+  }, [data]);
+
+  const formatMonth = (ym) => {
+    const [y, m] = ym.split("-");
+    const names = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${names[parseInt(m)]} ${y}`;
+  };
+
+  // ── Loading state ──
+  if (loading) {
+    return (
+      <div style={S.body}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={S.loadingWrap}>
+          <Icons.Loader size={40} style={{ color: "#5b5ef4", animation: "spin 1s linear infinite" }} />
+          <div style={{ color: "#7b7da8", fontWeight: 600 }}>Loading rebate applications…</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Manrope', sans-serif; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Manrope', sans-serif; margin: 0; padding: 0; }
         @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: none; opacity:1; } }
         tr:hover td { background: #f7f7fd; }
         input:focus { border-color: #5b5ef4 !important; }
@@ -327,25 +402,7 @@ export default function AdminRebatePage() {
       <div style={S.body}>
 
         {/* ── NAV ── */}
-        <nav style={S.nav}>
-          <div style={{ cursor:"pointer", color:"#7b7da8", display:"flex", alignItems:"center" }}>
-            <Icons.Menu size={20} />
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <div style={S.navIcon}><Icons.Utensils size={19} /></div>
-            <div>
-              <div style={S.navTitle}>CMMS</div>
-              <div style={S.navSub}>Centralized Mess Management</div>
-            </div>
-          </div>
-          <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:16 }}>
-            <div style={S.navBellWrap}>
-              <Icons.Bell size={20} />
-              <div style={S.navDot} />
-            </div>
-            <div style={S.navAvatar}><Icons.User size={18} /></div>
-          </div>
-        </nav>
+        <NavBar profile={profile} notifications={notifications} onOpenNotifications={handleOpenNotifications} />
 
         {/* ── MAIN ── */}
         <main style={S.main}>
@@ -357,15 +414,15 @@ export default function AdminRebatePage() {
               <h1 style={{ fontSize:24, fontWeight:800, color:"#1a1b3a" }}>Rebate Management</h1>
               <p style={{ color:"#7b7da8", fontSize:14, marginTop:2, fontWeight:500 }}>Review and approve student mess leave and rebate applications.</p>
             </div>
-            <div style={S.heroBadge}>{data.length} Total Applications</div>
+            <div style={S.heroBadge}>{stats.total} Total Applications</div>
           </div>
 
-          {/* Stats */}
+          {/* Stats — powered by GET /api/rebates/stats/ */}
           <div style={S.statsGrid}>
-            <StatCard label="Pending"        value={stats.pending}  iconBg="#fef3c7" iconColor="#f59e0b" IconComp={Icons.Clock}       onClick={() => filterByStatus("Pending")} />
-            <StatCard label="Approved"       value={stats.approved} iconBg="#dcfce7" iconColor="#22c55e" IconComp={Icons.CheckCircle}  onClick={() => filterByStatus("Approved")} />
-            <StatCard label="Rejected"       value={stats.rejected} iconBg="#fee2e2" iconColor="#ef4444" IconComp={Icons.XCircle}      onClick={() => filterByStatus("Rejected")} />
-            <StatCard label="Total Approved" value={"₹" + stats.total.toLocaleString("en-IN")} iconBg="#ededfd" iconColor="#5b5ef4" IconComp={Icons.Rupee} onClick={() => filterByStatus("")} />
+            <StatCard label="Pending"        value={stats.pending}  iconBg="#fef3c7" iconColor="#f59e0b" IconComp={Icons.Clock}       onClick={() => filterByStatus("pending")} />
+            <StatCard label="Approved"       value={stats.approved} iconBg="#dcfce7" iconColor="#22c55e" IconComp={Icons.CheckCircle}  onClick={() => filterByStatus("approved")} />
+            <StatCard label="Rejected"       value={stats.rejected} iconBg="#fee2e2" iconColor="#ef4444" IconComp={Icons.XCircle}      onClick={() => filterByStatus("rejected")} />
+            <StatCard label="Total Approved" value={"₹" + (stats.total_approved_amount || 0).toLocaleString("en-IN")} iconBg="#ededfd" iconColor="#5b5ef4" IconComp={Icons.Rupee} onClick={() => filterByStatus("")} />
           </div>
 
           {/* Toolbar */}
@@ -376,19 +433,19 @@ export default function AdminRebatePage() {
             </div>
             <select style={S.select} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
               <option value="">All Statuses</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
             </select>
             <select style={S.select} value={monthFilter} onChange={e => { setMonthFilter(e.target.value); setCurrentPage(1); }}>
               <option value="">All Months</option>
-              <option value="2026-01">Jan 2026</option>
-              <option value="2026-02">Feb 2026</option>
-              <option value="2026-03">Mar 2026</option>
+              {monthOptions.map(ym => (
+                <option key={ym} value={ym}>{formatMonth(ym)}</option>
+              ))}
             </select>
           </div>
 
-          {/* Table */}
+          {/* Table — data from GET /api/rebates/ */}
           <div style={S.tableWrap}>
             <table style={{ width:"100%", borderCollapse:"collapse" }}>
               <thead style={S.thead}>
@@ -408,20 +465,22 @@ export default function AdminRebatePage() {
                       No rebate applications match your filters.
                     </td>
                   </tr>
-                ) : slice.map((d, i) => (
+                ) : slice.map((d, i) => {
+                  const dailyRate = d.amount && d.days ? Math.round(d.amount / d.days) : 120;
+                  return (
                   <tr key={d.id}>
                     <td style={{ ...S.td, color:"#7b7da8", fontWeight:700, fontSize:13 }}>{(safePage-1)*PER+i+1}</td>
 
                     <td style={S.td}>
-                      <div style={{ fontWeight:700 }}>{d.name}</div>
-                      <div style={{ fontSize:12, color:"#7b7da8", marginTop:2 }}>{d.roll} · {d.mess}</div>
+                      <div style={{ fontWeight:700 }}>{d.user_name}</div>
+                      <div style={{ fontSize:12, color:"#7b7da8", marginTop:2 }}>{d.user_roll_no} · {d.user_hall}</div>
                     </td>
 
                     <td style={S.td}>
                       <div style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:13, fontWeight:600 }}>
-                        <span>{d.from}</span>
+                        <span>{d.start_date}</span>
                         <span style={{ color:"#7b7da8" }}><Icons.ArrowRight size={12} /></span>
-                        <span>{d.to}</span>
+                        <span>{d.end_date}</span>
                       </div>
                     </td>
 
@@ -432,37 +491,38 @@ export default function AdminRebatePage() {
                     </td>
 
                     <td style={S.td}>
-                      <span style={{ color:"#1a1b3a", fontWeight:500, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:180, display:"block" }}>{d.reason}</span>
+                      <span style={{ color:"#1a1b3a", fontWeight:500, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:180, display:"block" }}>{d.location}</span>
                     </td>
 
-                    <td style={{ ...S.td, color:"#7b7da8", fontSize:13, fontWeight:600 }}>{d.applied}</td>
+                    <td style={{ ...S.td, color:"#7b7da8", fontSize:13, fontWeight:600 }}>{d.created_at ? new Date(d.created_at).toLocaleDateString() : ""}</td>
 
                     <td style={S.td}>
-                      <div style={{ fontWeight:800, fontSize:14 }}>₹{d.amount.toLocaleString("en-IN")}</div>
-                      <div style={{ fontSize:11, color:"#7b7da8", marginTop:1 }}>{d.days}d × ₹{DAILY_RATE}</div>
+                      <div style={{ fontWeight:800, fontSize:14 }}>₹{(d.amount || 0).toLocaleString("en-IN")}</div>
+                      <div style={{ fontSize:11, color:"#7b7da8", marginTop:1 }}>{d.days}d × ₹{dailyRate}</div>
                     </td>
 
                     <td style={S.td}><StatusBadge status={d.status} /></td>
 
                     <td style={{ ...S.td, borderBottom: i === slice.length - 1 ? "none" : "1px solid #e5e6f7" }}>
                       <div style={{ display:"flex", gap:6 }}>
+                        {/* View detail — opens modal with data from GET /api/rebates/<id>/ */}
                         <ActionBtn color="#5b5ef4" hoverBg="#5b5ef4" title="View & Manage" onClick={() => setActiveId(d.id)}>
                           <Icons.Eye size={15} />
                         </ActionBtn>
-                        {d.status !== "Approved" && (
-                          <ActionBtn color="#22c55e" hoverBg="#22c55e" title="Approve" onClick={() => quickStatus(d.id, "Approved")}>
+                        {d.status !== "approved" && (
+                          <ActionBtn color="#22c55e" hoverBg="#22c55e" title="Approve" onClick={() => quickStatus(d.id, "approved")} disabled={isActioning}>
                             <Icons.Check size={15} />
                           </ActionBtn>
                         )}
-                        {d.status !== "Rejected" && (
-                          <ActionBtn color="#ef4444" hoverBg="#ef4444" title="Reject" onClick={() => quickStatus(d.id, "Rejected")}>
+                        {d.status !== "rejected" && (
+                          <ActionBtn color="#ef4444" hoverBg="#ef4444" title="Reject" onClick={() => quickStatus(d.id, "rejected")} disabled={isActioning}>
                             <Icons.X size={15} />
                           </ActionBtn>
                         )}
                       </div>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
 
@@ -480,9 +540,9 @@ export default function AdminRebatePage() {
           </div>
         </main>
 
-        {/* Modal */}
+        {/* Modal — actions call PATCH /api/rebates/<id>/ */}
         {activeId && activeItem && (
-          <RebateModal item={activeItem} onClose={() => setActiveId(null)} onAction={handleModalAction} />
+          <RebateModal item={activeItem} onClose={() => setActiveId(null)} onAction={handleModalAction} isActioning={isActioning} />
         )}
 
         {/* Toast */}

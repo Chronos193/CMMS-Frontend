@@ -1,10 +1,13 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import api from "../Api";
+import NavBar from "../components/utils/NavBar";
 
 /* ─── CSS Variables injected once ─── */
 const GlobalStyle = () => (
     <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; padding: 0; }
     :root {
       --accent: #5b5ef4; --accent-light: #ededfd; --accent-dark: #3b3ec2;
       --bg: #f0f1fb; --surface: #ffffff; --surface2: #f7f7fd;
@@ -19,29 +22,6 @@ const GlobalStyle = () => (
     }
     body { font-family: 'Manrope', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
     svg { display: inline-block; vertical-align: middle; }
-
-    /* NAV */
-    .af-nav {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; padding: 0 28px; height: 64px; gap: 14px;
-      position: sticky; top: 0; z-index: 100;
-    }
-    .af-nav-hamburger { cursor: pointer; color: var(--muted); display: flex; align-items: center; }
-    .af-nav-logo { display: flex; align-items: center; gap: 10px; }
-    .af-nav-icon {
-      width: 38px; height: 38px; background: var(--accent); border-radius: 10px;
-      display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
-    }
-    .af-nav-title { font-weight: 800; font-size: 17px; color: var(--text); line-height: 1.1; }
-    .af-nav-sub { font-size: 10px; letter-spacing: .12em; color: var(--muted); font-weight: 600; text-transform: uppercase; }
-    .af-nav-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
-    .af-nav-bell { position: relative; cursor: pointer; display: flex; align-items: center; color: var(--muted); }
-    .af-nav-dot { position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #fff; }
-    .af-nav-avatar {
-      width: 36px; height: 36px; border-radius: 50%; background: var(--surface2);
-      display: flex; align-items: center; justify-content: center; color: var(--muted);
-      cursor: pointer; border: 2px solid var(--border);
-    }
 
     /* MAIN */
     .af-main { padding: 32px 40px; max-width: 1320px; margin: 0 auto; }
@@ -188,6 +168,10 @@ const GlobalStyle = () => (
     .af-pgbtn:disabled { opacity: .35; pointer-events: none; }
     .af-pginfo { font-size: 13px; color: var(--muted); font-weight: 600; margin-right: 4px; }
 
+    /* Loading */
+    .af-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 16px; }
+    @keyframes af-spin { to { transform: rotate(360deg); } }
+
     @media (max-width: 900px) {
       .af-main { padding: 20px 16px; }
       .af-stats { grid-template-columns: repeat(2,1fr); }
@@ -201,10 +185,6 @@ const GlobalStyle = () => (
 
 /* ─── SVG Icons ─── */
 const Icon = {
-    Menu: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>,
-    Logo: () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" /></svg>,
-    Bell: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>,
-    User: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
     Chat: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><line x1="12" y1="8" x2="12" y2="14" /><line x1="9" y1="11" x2="15" y2="11" /></svg>,
     Clock: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
     Refresh: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>,
@@ -217,7 +197,12 @@ const Icon = {
     Save: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>,
     Inbox: () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>,
     CheckCircle2: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" /><path d="m9 12 2 2 4-4" /></svg>,
+    Loader: ({ size = 40 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>,
 };
+
+// Backend uses in_progress, frontend uses inprogress for CSS class mapping
+const toFrontendStatus = (s) => s === "in_progress" ? "inprogress" : s;
+const toBackendStatus = (s) => s === "inprogress" ? "in_progress" : s;
 
 const STATUS_LABEL = { pending: "Pending", inprogress: "In Progress", resolved: "Resolved", rejected: "Rejected" };
 const STATUS_CLASS = { pending: "af-s-pending", inprogress: "af-s-inprogress", resolved: "af-s-resolved", rejected: "af-s-rejected" };
@@ -230,22 +215,6 @@ const StatusIcon = ({ status, size = 11 }) => {
     if (status === "rejected") return <svg {...props}><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>;
     return null;
 };
-
-/* ─── Initial data ─── */
-const INITIAL_DATA = [
-    { id: 1, student: "Shubham Kumar Pandey", roll: "shubhamkp25@iitk.ac.in", category: "Library", desc: "The book named Ross is not available in library", date: "2026-03-19", status: "pending" },
-    { id: 2, student: "Shubham Kumar Pandey", roll: "shubhamkp25@iitk.ac.in", category: "Food", desc: "The food in canteen is very limited", date: "2026-03-19", status: "pending" },
-    { id: 3, student: "Ananya Sharma", roll: "ananya22@iitk.ac.in", category: "Hygiene", desc: "Washrooms near mess block are not cleaned daily, causing discomfort", date: "2026-03-18", status: "inprogress" },
-    { id: 4, student: "Rohan Verma", roll: "rverma21@iitk.ac.in", category: "Hostel", desc: "Hot water supply is intermittent in Hall 5 corridor", date: "2026-03-17", status: "resolved" },
-    { id: 5, student: "Priya Nair", roll: "priya24@iitk.ac.in", category: "Food", desc: "Vegan options not available for dinner on weekdays", date: "2026-03-16", status: "pending" },
-    { id: 6, student: "Aditya Singh", roll: "aditya23@iitk.ac.in", category: "Internet", desc: "WiFi speed in reading room drops to 0 after midnight", date: "2026-03-15", status: "rejected" },
-    { id: 7, student: "Kavya Menon", roll: "kavyam22@iitk.ac.in", category: "Library", desc: "Reference section chairs are broken and not replaced", date: "2026-03-14", status: "inprogress" },
-    { id: 8, student: "Rahul Gupta", roll: "rgupta24@iitk.ac.in", category: "Food", desc: "Quality of dal has degraded significantly this semester", date: "2026-03-13", status: "resolved" },
-    { id: 9, student: "Sneha Patel", roll: "sneha23@iitk.ac.in", category: "Hygiene", desc: "Dustbins in corridors overflow by afternoon daily", date: "2026-03-12", status: "pending" },
-    { id: 10, student: "Varun Joshi", roll: "varun21@iitk.ac.in", category: "Other", desc: "Mess closing time on Sundays is too early at 8 PM", date: "2026-03-11", status: "pending" },
-    { id: 11, student: "Manya Agarwal", roll: "manya25@iitk.ac.in", category: "Hostel", desc: "Power outages in Hall 3 study rooms lasting 20-30 min", date: "2026-03-10", status: "inprogress" },
-    { id: 12, student: "Deepak Chauhan", roll: "deepak22@iitk.ac.in", category: "Internet", desc: "VPN blocks access to several research databases", date: "2026-03-09", status: "resolved" },
-];
 
 const PER_PAGE = 8;
 
@@ -263,7 +232,9 @@ function useToast() {
    Main Component
 ══════════════════════════════════════════ */
 export default function AdminFeedbackPage() {
-    const [data, setData] = useState(INITIAL_DATA);
+    const [data, setData] = useState([]);
+    const [stats, setStats] = useState({ pending: 0, in_progress: 0, resolved: 0, rejected: 0, total: 0 });
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [catFilter, setCatFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
@@ -271,14 +242,54 @@ export default function AdminFeedbackPage() {
     const [modalItem, setModalItem] = useState(null);
     const [modalStatus, setModalStatus] = useState("");
     const { toast, showToast } = useToast();
+    const [profile, setProfile] = useState(null);
+    const [notifications, setNotifications] = useState([]);
 
-    /* ── Counts ── */
+    // ── Fetch all data ──
+    const fetchData = async () => {
+        try {
+            const [feedbacksRes, statsRes, profileRes, notifRes] = await Promise.all([
+                api.get("/api/feedbacks/"),
+                api.get("/api/feedbacks/stats/"),
+                api.get("/api/profile/"),
+                api.get("/api/notifications/"),
+            ]);
+
+            // Map backend status to frontend status
+            const mapped = (feedbacksRes.data || []).map(d => ({
+                ...d,
+                student: d.user_name || "Unknown",
+                roll: d.user_email || "",
+                desc: d.content,
+                status: toFrontendStatus(d.status),
+            }));
+            setData(mapped);
+            setStats(statsRes.data || { pending: 0, in_progress: 0, resolved: 0, rejected: 0, total: 0 });
+            setProfile(profileRes.data);
+            setNotifications(notifRes.data?.results || notifRes.data || []);
+        } catch (err) {
+            console.error("Failed to fetch feedback data:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchData(); }, []);
+
+    const handleOpenNotifications = async () => {
+        const hasUnseen = notifications.some(n => n.category === 'unseen');
+        if (!hasUnseen) return;
+        setNotifications(prev => prev.map(n => ({ ...n, category: 'seen' })));
+        try { await api.post('/api/notifications/mark-seen/'); } catch (e) { console.error(e); }
+    };
+
+    /* ── Counts (from stats API) ── */
     const counts = useMemo(() => ({
-        pending: data.filter(d => d.status === "pending").length,
-        inprogress: data.filter(d => d.status === "inprogress").length,
-        resolved: data.filter(d => d.status === "resolved").length,
-        rejected: data.filter(d => d.status === "rejected").length,
-    }), [data]);
+        pending: stats.pending || 0,
+        inprogress: stats.in_progress || 0,
+        resolved: stats.resolved || 0,
+        rejected: stats.rejected || 0,
+    }), [stats]);
 
     /* ── Filtered rows ── */
     const filtered = useMemo(() => {
@@ -294,57 +305,68 @@ export default function AdminFeedbackPage() {
     const safePage = Math.min(page, totalPages);
     const pageRows = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
-    /* Reset to page 1 when filters change */
-    // useEffect(() => { setPage(1); }, [search, catFilter, statusFilter]);
-
     /* ── Actions ── */
-    const quickStatus = (id, status) => {
-        setData(prev => prev.map(d => d.id === id ? { ...d, status } : d));
-        showToast(`Status updated to "${STATUS_LABEL[status]}"`);
+    const quickStatus = async (id, frontendStatus) => {
+        const backendStatus = toBackendStatus(frontendStatus);
+        try {
+            await api.patch(`/api/feedbacks/${id}/`, { status: backendStatus });
+            setData(prev => prev.map(d => d.id === id ? { ...d, status: frontendStatus } : d));
+            // Refresh stats
+            const statsRes = await api.get("/api/feedbacks/stats/");
+            setStats(statsRes.data);
+            showToast(`Status updated to "${STATUS_LABEL[frontendStatus]}"`);
+        } catch (err) {
+            console.error("Failed to update status:", err);
+            showToast("Failed to update status");
+        }
     };
 
     const openModal = (item) => { setModalItem(item); setModalStatus(item.status); };
     const closeModal = () => setModalItem(null);
 
-    const saveModal = () => {
+    const saveModal = async () => {
         if (!modalItem) return;
-
-        setData(prev =>
-            prev.map(d =>
-                d.id === modalItem.id
-                    ? { ...d, status: modalStatus }
-                    : d
-            )
-        );
-
-        showToast(`Complaint #${modalItem.id} updated to "${STATUS_LABEL[modalStatus]}"`);
-        closeModal();
+        const backendStatus = toBackendStatus(modalStatus);
+        try {
+            await api.patch(`/api/feedbacks/${modalItem.id}/`, { status: backendStatus });
+            setData(prev => prev.map(d => d.id === modalItem.id ? { ...d, status: modalStatus } : d));
+            const statsRes = await api.get("/api/feedbacks/stats/");
+            setStats(statsRes.data);
+            showToast(`Complaint #${modalItem.id} updated to "${STATUS_LABEL[modalStatus]}"`);
+            closeModal();
+        } catch (err) {
+            console.error("Failed to update status:", err);
+            showToast("Failed to update status");
+        }
     };
 
     const filterByStatus = (s) => { setStatusFilter(s); setPage(1); };
+
+    /* ── Categories from data ── */
+    const categories = useMemo(() => {
+        const cats = [...new Set(data.map(d => d.category))];
+        return cats.sort();
+    }, [data]);
+
+    if (loading) {
+        return (
+            <>
+                <GlobalStyle />
+                <NavBar profile={profile} notifications={notifications} onOpenNotifications={handleOpenNotifications} />
+                <div className="af-loading">
+                    <Icon.Loader size={40} style={{ color: "#5b5ef4", animation: "af-spin 1s linear infinite" }} />
+                    <div style={{ color: "#7b7da8", fontWeight: 600 }}>Loading complaints…</div>
+                </div>
+            </>
+        );
+    }
 
     return (
         <>
             <GlobalStyle />
 
             {/* ── NAV ── */}
-            <nav className="af-nav">
-                <div className="af-nav-hamburger"><Icon.Menu /></div>
-                <div className="af-nav-logo">
-                    <div className="af-nav-icon"><Icon.Logo /></div>
-                    <div>
-                        <div className="af-nav-title">CMMS</div>
-                        <div className="af-nav-sub">Centralized Mess Management</div>
-                    </div>
-                </div>
-                <div className="af-nav-right">
-                    <div className="af-nav-bell">
-                        <Icon.Bell />
-                        <div className="af-nav-dot" />
-                    </div>
-                    <div className="af-nav-avatar"><Icon.User /></div>
-                </div>
-            </nav>
+            <NavBar profile={profile} notifications={notifications} onOpenNotifications={handleOpenNotifications} />
 
             <main className="af-main">
 
@@ -355,7 +377,7 @@ export default function AdminFeedbackPage() {
                         <h1>Feedback &amp; Complaints</h1>
                         <p>Review, manage, and respond to all student submissions from one place.</p>
                     </div>
-                    <div className="af-hero-badge">{data.length} Total Submissions</div>
+                    <div className="af-hero-badge">{stats.total || data.length} Total Submissions</div>
                 </div>
 
                 {/* ── STATS ── */}
@@ -394,7 +416,7 @@ export default function AdminFeedbackPage() {
                     </div>
                     <select className="af-select" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
                         <option value="">All Categories</option>
-                        {["Food", "Hygiene", "Library", "Hostel", "Internet", "Other"].map(c => (
+                        {categories.map(c => (
                             <option key={c}>{c}</option>
                         ))}
                     </select>

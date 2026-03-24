@@ -73,6 +73,11 @@ const RebatePage = () => {
         { name: "Leaves & Rebates", path: "/rebate" },
     ];
 
+    // Calculate minimum valid start date (at least 2 days in advance)
+    const minStart = new Date();
+    minStart.setDate(minStart.getDate() + 2);
+    const minStartStr = minStart.toISOString().split('T')[0];
+
     const handleApplyRebate = async (e) => {
         e.preventDefault();
         if (!startDate || !endDate || !location) {
@@ -182,6 +187,7 @@ const RebatePage = () => {
                                                 type="date" 
                                                 value={startDate}
                                                 onChange={(e) => setStartDate(e.target.value)}
+                                                min={minStartStr}
                                                 className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all cursor-pointer"
                                                 required
                                             />
@@ -195,6 +201,7 @@ const RebatePage = () => {
                                                 type="date" 
                                                 value={endDate}
                                                 onChange={(e) => setEndDate(e.target.value)}
+                                                min={startDate || minStartStr}
                                                 className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all cursor-pointer"
                                                 required
                                             />

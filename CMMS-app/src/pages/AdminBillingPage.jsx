@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import api from "../Api";
+import NavBar from "../components/utils/NavBar";
 
 // ── Inline SVG Icons ───────────────────────────────────────────────────────
 const Icon = ({ children, size = 20, style = {} }) => (
@@ -304,7 +306,30 @@ export default function AdminBillingPage() {
   const [page, setPage]           = useState(1);
   const [activeId, setActiveId]   = useState(null);
   const [toast, setToast]         = useState({ show:false, msg:"" });
+  const [profile, setProfile]     = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const PER = 8;
+
+  useEffect(() => {
+    const fetchNavData = async () => {
+      try {
+        const [profileRes, notifRes] = await Promise.all([
+          api.get('/api/profile/'),
+          api.get('/api/notifications/'),
+        ]);
+        setProfile(profileRes.data);
+        setNotifications(notifRes.data?.results || notifRes.data || []);
+      } catch (err) { console.error(err); }
+    };
+    fetchNavData();
+  }, []);
+
+  const handleOpenNotifications = async () => {
+    const hasUnseen = notifications.some(n => n.category === 'unseen');
+    if (!hasUnseen) return;
+    setNotifications(prev => prev.map(n => ({ ...n, category: 'seen' })));
+    try { await api.post('/api/notifications/mark-seen/'); } catch (e) { console.error(e); }
+  };
 
   const stats = useMemo(()=>({
     unpaid:  students.filter(s=>s.payStatus==="Unpaid").length,
@@ -388,8 +413,8 @@ export default function AdminBillingPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0;}
-        body{font-family:'Manrope',sans-serif;}
+        *{box-sizing:border-box;}
+        body{font-family:'Manrope',sans-serif;margin:0;padding:0;}
         @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
         tbody tr:hover td{background:#f7f7fd;}
         input:focus,select:focus,textarea:focus{border-color:#5b5ef4!important;}
@@ -401,27 +426,7 @@ export default function AdminBillingPage() {
       <div style={{ fontFamily:"'Manrope',sans-serif", background:T.bg, minHeight:"100vh", color:T.text }}>
 
         {/* NAV */}
-        <nav style={{ background:T.surface, borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", padding:"0 28px", height:64, gap:14, position:"sticky", top:0, zIndex:100 }}>
-          <div style={{ cursor:"pointer", color:T.muted, display:"flex", alignItems:"center" }}><Icons.Menu size={20}/></div>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <div style={{ width:38, height:38, background:T.accent, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}>
-              <Icons.Utensils size={19}/>
-            </div>
-            <div>
-              <div style={{ fontWeight:800, fontSize:17, lineHeight:1.1 }}>CMMS</div>
-              <div style={{ fontSize:10, letterSpacing:".12em", color:T.muted, fontWeight:600, textTransform:"uppercase" }}>Centralized Mess Management</div>
-            </div>
-          </div>
-          <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:16 }}>
-            <div style={{ position:"relative", cursor:"pointer", display:"flex", alignItems:"center", color:T.muted }}>
-              <Icons.Bell size={20}/>
-              <div style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#ef4444", borderRadius:"50%", border:"2px solid #fff" }}/>
-            </div>
-            <div style={{ width:36, height:36, borderRadius:"50%", background:T.surface2, display:"flex", alignItems:"center", justifyContent:"center", color:T.muted, cursor:"pointer", border:`2px solid ${T.border}` }}>
-              <Icons.User size={18}/>
-            </div>
-          </div>
-        </nav>
+        <NavBar profile={profile} notifications={notifications} onOpenNotifications={handleOpenNotifications} />
 
         <main style={{ padding:"32px 40px", maxWidth:1320, margin:"0 auto" }}>
 
