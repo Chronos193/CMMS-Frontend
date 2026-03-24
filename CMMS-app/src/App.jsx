@@ -8,14 +8,18 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import ExtrasPage from './pages/ExtrasPage';
 import RebatePage from './pages/RebatePage';
 import BillingPage from './pages/BillingPage'
-
+import AdminFeedbackPage from './pages/AdminFeedbackPage';
+import AdminExtrasManagement from './pages/AdminExtrasManagement';
+import AdminBillingPage from './pages/AdminBillingPage';
+import AdminMenuManagement from './pages/AdminMenuManagement';
+import AdminRebatePage from './pages/AdminRebatePage';
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<AuthPage />} />
-        
+
         {/* Protected Routes */}
         <Route path="/first" element={
           <ProtectedRoute>
@@ -35,22 +39,46 @@ function App() {
 
         <Route path='/extras' element={
           <ProtectedRoute>
-            <ExtrasPage/>
+            <ExtrasPage />
           </ProtectedRoute>
-        }/>
+        } />
 
         <Route path='/rebate' element={
           <ProtectedRoute>
-            <RebatePage/>
+            <RebatePage />
           </ProtectedRoute>
-        }/>
+        } />
 
         <Route path='/billing' element={
           <ProtectedRoute>
-            <BillingPage/>
+            <BillingPage />
           </ProtectedRoute>
-        }/>
-
+        } />
+        <Route path="/admin-feedback" element={
+          <ProtectedRoute>
+            <AdminFeedbackPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin-extras" element={
+          <ProtectedRoute>
+            <AdminExtrasManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin-billing" element={
+          <ProtectedRoute>
+            <AdminBillingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin-menu" element={
+          <ProtectedRoute>
+            <AdminMenuManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin-rebate" element={
+          <ProtectedRoute>
+            <AdminRebatePage />
+          </ProtectedRoute>
+        } />
         {/* Public Routes */}
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<HomePage />} />
